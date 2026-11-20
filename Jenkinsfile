@@ -3,6 +3,11 @@ pipeline {
 
     // Run the pipeline on any available Jenkins agent
     agent any
+    
+    tools {
+    jdk 'JDK21'
+    maven 'Maven3'
+}
 
     stages {
 
@@ -13,14 +18,23 @@ pipeline {
             }
         }
 
-        // Stage 2: Compile, test and package
-        stage('Build and Test') {
+        // Stage 2: Verify Java, Maven and Git
+        stage('Check Tools') {
             steps {
-                sh 'mvn -B clean verify'
+                bat 'java -version'
+                bat 'mvn -version'
+                bat 'git --version'
             }
         }
 
-        // Stage 3: Archive the executable JAR
+        // Stage 3: Compile, test and package
+        stage('Build and Test') {
+            steps {
+                bat 'mvn -B clean verify'
+            }
+        }
+
+        // Stage 4: Archive the executable JAR
         stage('Archive Application') {
             steps {
                 archiveArtifacts(
@@ -33,16 +47,20 @@ pipeline {
 
     // Publish JUnit test results even if a test fails
     post {
+
         always {
-            junit 'target/surefire-reports/*.xml'
+            junit(
+                testResults: 'target/surefire-reports/*.xml',
+                allowEmptyResults: true
+            )
         }
 
         success {
-            echo 'Vowel Counter build completed successfully!'
+            echo 'Room Management build completed successfully!'
         }
 
         failure {
-            echo 'Vowel Counter build failed. Check the logs.'
+            echo 'Room Management build failed. Check the Jenkins console logs.'
         }
     }
 }
